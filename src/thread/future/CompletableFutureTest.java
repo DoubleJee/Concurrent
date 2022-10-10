@@ -5,13 +5,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-// 专注于异步多任务协同工作
+// 专注于异步多任务协同工作               (执行任务 ->  添加任务完成之后的动作（回调方法） ->  执行回调)
 public class CompletableFutureTest {
 
     // 创建异步任务
     static void supplyAsync() {
         // 异步Supplier
-        CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> "data");
+        CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> "supplier");
     }
 
     static void runAsync() {
@@ -70,15 +70,9 @@ public class CompletableFutureTest {
             return "data";
         });
 
-//        try {
-//            Thread.sleep(1);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-
 
         // 如果任务没有完成，设置任务结果为给定值
-        completableFuture.complete("love");
+        completableFuture.complete("default");
         System.out.println(completableFuture.join());
     }
 
@@ -92,21 +86,15 @@ public class CompletableFutureTest {
             return "data";
         });
 
-//        try {
-//            Thread.sleep(1);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-
 
         // 如果任务没有完成，设置任务结果抛出给定异常
         completableFuture.completeExceptionally(new RuntimeException("超时啦！"));
         System.out.println(completableFuture.join());
     }
 
-    // 组合任务
+    // 组合任务     （前置任务异常，则不会进入，get时抛出前置任务的异常）
     static void thenAcceptAsync() {
-        // 接受前个任务的值，并异步消费
+        // 接受前个任务完成的值，并异步消费
         CompletableFuture<Void> completableFuture = CompletableFuture.supplyAsync(() -> "data").thenAcceptAsync((param) -> {
             System.out.println(param);
             param = null;
@@ -115,7 +103,7 @@ public class CompletableFutureTest {
     }
 
     static void thenApplyAsync() {
-        // 接受前个任务的值，并异步function使用
+        // 接受前个任务完成的值，并异步function使用
         CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> "data").thenApplyAsync((param) -> {
             System.out.println(param);
             return param;
@@ -125,7 +113,7 @@ public class CompletableFutureTest {
     }
 
     static void thenCombine() {
-        // 接受前两个任务的值，并且异步function使用          (有对应的run 消费等方法)
+        // 接受前两个任务完成的值，并且异步function使用          (有对应的run 消费等方法)
         CompletableFuture.supplyAsync(() -> "first").thenCombineAsync(CompletableFuture.supplyAsync(() -> "second")
                 , (a, b) -> {
                     System.out.println(a);
@@ -135,7 +123,7 @@ public class CompletableFutureTest {
     }
 
     static void applyToEither() {
-        // 接受前面任务任意一个完成的值，并且异步function使用          (有对应的run 消费等方法)
+        // 接受前面两个任务任意一个完成的值，并且异步function使用          (有对应的run 消费等方法)
         CompletableFuture.supplyAsync(() -> "first").applyToEitherAsync(CompletableFuture.supplyAsync(() -> {
             try {
                 Thread.sleep(2000);
@@ -149,6 +137,7 @@ public class CompletableFutureTest {
         }).join();
     }
 
+    // 聚合多个任务
     static void allOf() {
         CompletableFuture<Void> future1 = CompletableFuture.runAsync(() -> {
             try {
@@ -214,7 +203,7 @@ public class CompletableFutureTest {
         System.out.println(anyFuture.join());
     }
 
-    // 计算结果完成后的处理
+    // 任务结束后的处理
     static void whenCompleteAsync() {
         // 接受前个任务结束后的值和抛出的异常，并异步消费处理，然后返回前个任务结果
         CompletableFuture<String> completableFuture = CompletableFuture.supplyAsync(() -> {
